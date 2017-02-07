@@ -68,6 +68,7 @@ def restart_supervisor(logger):
     else:
         print 'restart apache2 is success'
 
+
 def main():
     logger = test_get_logger()
     restart_supervisor(logger)
