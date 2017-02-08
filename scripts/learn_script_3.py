@@ -13,3 +13,20 @@ class HouGuangDong(object):
 
 
 HouGuangDong.store('hou', 17, {'13':'12'})
+
+
+a = [
+'2',
+'37',
+'38',
+]
+
+b = [
+'vRA',
+'VIO',
+'Marvin2.0.0',
+]
+
+
+dictionary = dict(zip(a, b))
+print dictionary
