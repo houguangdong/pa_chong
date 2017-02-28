@@ -31,9 +31,15 @@ product_dict = {
     '152': 'vshield-sslvpn-client-win', '155': 'vshield-mgmtplatform', '41': 'client-module', '157': 'view', '159': 'v4c (v4pa)', '158': 'v4v(v4h)', '48': 'VAMI', 
     '46': 'vapi', '119': 'srm_vrops', '44': 'vcenter', '43': 'vpxwin', '40': 'vimclients', '118': 'hws-desktop-client', '146': 'vsphere-ui', '147': 'crtbora', 
     '145': 'vsphere-ui-modules', '142': 'view', '143': 'installkit', '140': 'vcopssuitevm', '148': 'viewcrt', '149': 'viewclientweb', '77': 'vsphere-client-modules', 
-    '76': 'vimclients', '75': 'ciswin_standalone', '74': 'vcenter', '73': 'iso', '72': 'ts', '71': 'ovfs', '70': 'vmsyslogcollector', '79': 'cls', '78': 'vapi'
+    '76': 'vimclients', '75': 'ciswin_standalone', '74': 'vcenter', '73': 'iso', '72': 'ts', '71': 'ovfs', '70': 'vmsyslogcollector', '79': 'cls', '78': 'vapi',
+    '175': 'wem-agent-installer', '176': 'SV_Agent', '177': 'Astro', '178': 'wem-agent-installer'
 }
 
+
+not_daily_export = [
+    '116', '149', '163', '44', '51', '63', '75',
+    '148'                                       # special release id
+]
 
 user_info = {
     'username': 'ghou',
@@ -59,7 +65,7 @@ def daily_send_mail(logger):
     p = subprocess.Popen(supervisor_status, shell=True)
     stdout, stderr = p.communicate()
     content = 'Hi All, \n'
-    content += 'This is %s report' % datetime.date.today() +'\n\n'
+    content += 'This is %s report' % (datetime.date.today()+datetime.timedelta(days=1)) +'\n\n'
     content += 'GRM font-end:\n'
     if stdout or stderr:
         supervisor_message = '1 supervisor process is down'
@@ -76,15 +82,14 @@ def daily_send_mail(logger):
     else:
         rabbitmq_message = '2 rabbitmq process is success'
     content += rabbitmq_message + '\n'
-    memory_status = "free -m | awk '{print $3}' | head -2"
+    memory_status = "free -m | grep 'Mem' | awk '{print $4}'"
     p2 = subprocess.Popen(memory_status, shell=True, stdout=subprocess.PIPE)
     stdout, stderr = p2.communicate()
     if stderr:
         memory_free = '3 memory command is err'
         logger.info("memory command err message is %s" % stderr)
     else:
-        stdout = stdout.replace('\n', ' ')
-        memory_free = '3 memory is %sM' % stdout
+        memory_free = '3 memory is free %sM' % stdout.strip('\n')
     content += memory_free + '\n'
     cpu_status = "/usr/bin/top -bcn 1 |grep Cpu | awk -F 'us,' '{print $1}' | awk -F ':' '{print $2}'"
     p3 = subprocess.Popen(cpu_status, shell=True, stdout=subprocess.PIPE)
@@ -104,16 +109,25 @@ def daily_send_mail(logger):
     server=jenkins.Jenkins("http://gabi.eng.vmware.com:8080", username=user_info['username'], password=user_info['password'])
     jobs_list = server.get_all_jobs('/api/python')
     i = 1
+    flag = False
     for item in jobs_list:
         if item['color'] == 'red':
             item_number = item['name'].split('-')[0].strip()
             product_name = product_dict.get(item_number)
+            if item_number in not_daily_export:
+                continue
             if item_number and product_name:
+                flag = True
                 content += '%s %s product(release_%s) is build fail' % (i, product_name, item_number)
             elif item_number:
+                flag = True
                 content += '%s release_%s is build fail' % (i, item_number)
             content += '\n'
             i+=1
+    if not flag:
+        content += 'ALL product export packages are success'
+        content += '\n'
+    content += '\n'
     #　g11n-grm-project@vmware.com
     send_mail("GRM daily maintenance information", content, 'ghou@vmware.com', ['g11n-grm-project@vmware.com'], auth_user=user_info['username'], auth_password=user_info['password'])
 
