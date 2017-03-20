@@ -66,45 +66,74 @@ def daily_send_mail(logger):
     stdout, stderr = p.communicate()
     content = 'Hi All, \n'
     content += 'This is %s report' % (datetime.date.today()+datetime.timedelta(days=1)) +'\n\n'
-    content += 'GRM font-end:\n'
+    content += 'GRM(gabi.eng.vmware.com):\n'
     if stdout or stderr:
-        supervisor_message = '1 supervisor process is down'
+        supervisor_message = '1 Supervisor process is down'
         logger.info("supervisor process is down out %s, err %s" % (stdout, stderr))
     else:
-        supervisor_message = '1 supervisor process is success'
+        supervisor_message = '1 Supervisor process is running successfully.'
     content += supervisor_message + '\n'
     rabbitmq_status = "sudo rabbitmqctl status"
     p1 = subprocess.Popen(rabbitmq_status, shell=True)
     stdout, stderr = p1.communicate()
     if stdout or stderr:
-        rabbitmq_message = '2 rabbitmq process is down'
+        rabbitmq_message = '2 Rabbitmq process is down'
         logger.info("rabbitmq process is down out %s, err %s" % (stdout, stderr))
     else:
-        rabbitmq_message = '2 rabbitmq process is success'
+        rabbitmq_message = '2 Rabbitmq process is running successfully.'
     content += rabbitmq_message + '\n'
-    memory_status = "free -m | grep 'Mem' | awk '{print $4}'"
-    p2 = subprocess.Popen(memory_status, shell=True, stdout=subprocess.PIPE)
+    cpu_status = "/usr/bin/top -bcn 1 |grep Cpu | awk -F 'us,' '{print $1}' | awk -F ':' '{print $2}'"
+    p2 = subprocess.Popen(cpu_status, shell=True, stdout=subprocess.PIPE)
     stdout, stderr = p2.communicate()
     if stderr:
-        memory_free = '3 memory command is err'
-        logger.info("memory command err message is %s" % stderr)
-    else:
-        memory_free = '3 memory is free %sM' % stdout.strip('\n')
-    content += memory_free + '\n'
-    cpu_status = "/usr/bin/top -bcn 1 |grep Cpu | awk -F 'us,' '{print $1}' | awk -F ':' '{print $2}'"
-    p3 = subprocess.Popen(cpu_status, shell=True, stdout=subprocess.PIPE)
-    stdout, stderr = p3.communicate()
-    if stderr:
-        cpu_use_rate = '4 cpu command is err'
+        cpu_use_rate = '3 cpu command is err'
         logger.info("cpu command err message %s" % stderr)
     else:
         try:
             cpu_rate = stdout.split(' ')[1]
         except:
             print(traceback.format_exc())
-        cpu_use_rate = '4 cpu use rate is %s%%' % cpu_rate
-    content += cpu_use_rate
-    content += '\n\nGRM back-end:\n'
+        cpu_use_rate = '3 CPU used rate %s%%.' % cpu_rate
+    content += cpu_use_rate + '\n'
+    memory_status = "free -m | grep 'cache' | awk '{print $4}'"
+    p3 = subprocess.Popen(memory_status, shell=True, stdout=subprocess.PIPE)
+    stdout, stderr = p3.communicate()
+    if stderr:
+        memory_free = '4 Memory command is err'
+        logger.info("memory command err message is %s" % stderr)
+    else:
+        number = stdout.split('\n')[1]
+        memory_free = '4 Memory free %sM.' % number.strip('\n')
+    content += memory_free + '\n'
+    var_disk_residue = "df -h | awk '{print $4}' | sed -n '12p'"
+    p4 = subprocess.Popen(var_disk_residue, shell=True, stdout=subprocess.PIPE)
+    stdout, stderr = p4.communicate()
+    if stderr:
+        disk_residue = '5 var disk residue command is err'
+        logger.info("var disk residue command message is %s" % stderr)
+    else:
+        disk_residue = '5 /var/ disk free %s.' % stdout.strip('\n')
+    content += disk_residue
+    content += '\n\nGRM_DB(gabi-db.eng.vmware.com):\n'
+    cat_gabi_db = "cat /var/www/g11nRepository/ghou.txt | sed -n '2p'" # sshpass -p Donga@123 ssh ghou@gabi-db.eng.vmware.com free -m | grep 'cache' | awk '{print $4}'
+    p5 = subprocess.Popen(cat_gabi_db, shell=True, stdout=subprocess.PIPE)
+    stdout1, stderr1 = p5.communicate()
+    if stderr1:
+        memory_free1 = '1 server memory command is err'
+        logger.info("memory command err message is %s" % stderr1)
+    else:
+        memory_free1 = '1 Server memory free %sM.' % stdout1.strip('\n')
+    content += memory_free1 + '\n'
+    cat_mnt_data = "cat /var/www/g11nRepository/ghou.txt | sed -n '3p'" # sshpass -p Donga@123 ssh ghou@gabi-db.eng.vmware.com df -h | awk '{print $4}' | sed -n '13p'
+    p6 = subprocess.Popen(cat_mnt_data, shell=True, stdout=subprocess.PIPE)
+    stdout2, stderr2 = p6.communicate()
+    if stderr2:
+        mnt_disk = '2 df -h command is err'
+        logger.info("df -h command err message is %s" % stderr2)
+    else:
+        mnt_disk = '2 /mnt/data disk free %s.' % stdout2.strip('\n')
+    content += mnt_disk
+    content += '\n\nGRM(jenkins build):\n'
     #　sudo pip install python-jenkins (need setup jenkins package)
     server=jenkins.Jenkins("http://gabi.eng.vmware.com:8080", username=user_info['username'], password=user_info['password'])
     jobs_list = server.get_all_jobs('/api/python')
@@ -125,7 +154,7 @@ def daily_send_mail(logger):
             content += '\n'
             i+=1
     if not flag:
-        content += 'ALL product export packages are success'
+        content += "All product's builds are successful."
         content += '\n'
     content += '\n'
     #　g11n-grm-project@vmware.com

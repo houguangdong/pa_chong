@@ -50,7 +50,7 @@ def bfs(root_dir, flag):
 
 
 if __name__ == '__main__':
-    root_dir = r'D:\1_GRM_product\vRB\handback\drop6\ascii_version\itfm\itfm-cloud'
+    root_dir = r'D:\testdata\ui-drop3-native'
     isConver = argv[1]
     if isConver == 'True':
         flag = True

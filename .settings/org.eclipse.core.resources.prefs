@@ -14,3 +14,7 @@ encoding//pa_chong/6_chapter.py=utf8
 encoding//pa_chong/7_chapter.py=utf8
 encoding//pa_chong/8_chapter.py=utf8
 encoding//pa_chong/9_chapter.py=utf8
+encoding//scripts/daily_send_mail.py=utf-8
+encoding//scripts/native2ascii.py=utf-8
+encoding//scripts/special_attr_and_method.py=utf-8
+encoding//scripts/supervisor_restart.py=utf-8
